@@ -59,6 +59,17 @@ class AdminCreateUserView(APIView):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            role = request.data['role']
+            
+            # populate the appropriate table based on the role
+            if role == 'STUDENT':
+                StudentProfile.objects.create(user=user)    
+            elif role == 'TEACHING_STAFF':
+                TeacherProfile.objects.create(user=user)
+            elif role == 'NON_TEACHING_STAFF':
+                NonTeachingStaffProfile.objects.create(user=user)
+
+            # Generate password
             password = request.data['password']
 
             # Send credentials to user via email

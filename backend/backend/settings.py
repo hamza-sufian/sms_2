@@ -35,7 +35,9 @@ SECRET_KEY = 'django-insecure-e)&=k6zoynnl33)9ce*4169=#zdaipeh@ag0ugdq400ma^7k_+
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*']
+CORS_ORIGIN_ALLOW_ALL = True
+CORS_ALLOW_CREDENTIALS = True
 
 
 # Application definition
@@ -50,6 +52,7 @@ INSTALLED_APPS = [
     'api',
     'drf_yasg',
     'rest_framework',
+    'corsheaders',
 ]
 
 MIDDLEWARE = [
@@ -60,6 +63,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -98,6 +102,18 @@ DATABASES = {
 }
 
 
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',  # Enables session-based authentication
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',  # Makes sure the user is authenticated for all API requests
+    ],
+}
+
+
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'sandbox.smtp.mailtrap.io'
@@ -106,6 +122,11 @@ EMAIL_USE_SSL = True
 DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
 EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
+}
 
 
 # Password validation
@@ -143,6 +164,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

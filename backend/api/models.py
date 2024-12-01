@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser, Group, Permission
+from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.timezone import now
 from django.conf import settings
@@ -10,15 +10,39 @@ class Role(models.Model):
 
     def __str__(self):
         return self.name
+    
+    
+# Custom User Manager
+class UserManager(BaseUserManager):
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('The Email field must be set')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
 
-# Custom User Model
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'ADMIN')  # Force role to ADMIN for superusers
+
+        if extra_fields.get('is_staff') is not True:
+            raise ValueError('Superuser must have is_staff=True.')
+        if extra_fields.get('is_superuser') is not True:
+            raise ValueError('Superuser must have is_superuser=True.')
+
+        return self.create_user(email, password, **extra_fields)
+
+
 class User(AbstractUser):
     ROLE_CHOICES = [
+        ('ADMIN', 'Admin'),
         ('STUDENT', 'Student'),
         ('TEACHING_STAFF', 'Teaching Staff'),
         ('NON_TEACHING_STAFF', 'Non-Teaching Staff'),
     ]
-    # Fields specific to your custom User model
     name = models.CharField(max_length=100, null=True, blank=True)
     role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STUDENT')
     contact = models.CharField(max_length=15, null=True, blank=True)
@@ -28,13 +52,22 @@ class User(AbstractUser):
     government_id = models.CharField(max_length=100, null=True, blank=True)
     email_verified = models.BooleanField(default=False)
     profile_picture = models.ImageField(upload_to='uploads/profile_pictures/', null=True, blank=True)
-    email = models.EmailField(unique=True)  # Ensure unique email for verification
+    email = models.EmailField(unique=True)
 
     USERNAME_FIELD = 'email'  # Use email as the unique login identifier
-    REQUIRED_FIELDS = ['username']  # Specify fields required for creating a superuser
+    REQUIRED_FIELDS = ['username']  # Fields required for creating a superuser
+
+    objects = UserManager()  # Link to the custom manager
+
+    def save(self, *args, **kwargs):
+        # Ensure that superusers always have the ADMIN role
+        if self.is_superuser and self.role != 'ADMIN':
+            self.role = 'ADMIN'
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.username} ({self.role})"
+
 
 # Student Profile Model
 class StudentProfile(models.Model):
