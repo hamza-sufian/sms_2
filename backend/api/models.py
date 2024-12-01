@@ -102,6 +102,17 @@ class TeacherProfile(models.Model):
     def __str__(self):
         return f"Teacher Profile for {self.user.username}"
 
+class NonTeachingStaffProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="non_teaching_staff_profile")
+    position = models.CharField(max_length=100)
+    image = models.ImageField(null=True, blank=True)
+    date_of_employment = models.DateField()
+    department = models.CharField(max_length=100, null=True, blank=True)
+    college_degree = models.CharField(max_length=100, null=True, blank=True)
+    
+    def __str__(self):
+        return f"Non-Teaching Staff Profile for {self.user.username}"
+
 # OTP Model for storing OTP information
 class OTP(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="otp")

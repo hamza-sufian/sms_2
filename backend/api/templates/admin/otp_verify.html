@@ -1,0 +1,18 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+
+{% block content %}
+<div id="content-main">
+  <form method="post" id="otp-form">
+    {% csrf_token %}
+    <div class="form-row">
+      {{ form.non_field_errors }}
+      <label for="id_otp">{% trans 'OTP' %}:</label>
+      <input type="text" name="otp" id="id_otp" required>
+    </div>
+    <div class="submit-row">
+      <input type="submit" value="{% trans 'Verify OTP' %}">
+    </div>
+  </form>
+</div>
+{% endblock %}

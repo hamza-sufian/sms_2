@@ -1,22 +1,28 @@
 from django.contrib import admin
-from .models import User, Role, StudentProfile, TeacherProfile, OTP
+from django.contrib.auth.admin import UserAdmin
+from .models import User, StudentProfile, TeacherProfile, NonTeachingStaffProfile, OTP
 
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('username', 'email', 'role', 'email_verified')
-    search_fields = ('username', 'email')
+class CustomUserAdmin(UserAdmin):
+    list_display = ('username', 'email', 'role', 'name', 'is_staff', 'is_active')
+    list_filter = ('role', 'is_staff', 'is_active')
+    fieldsets = (
+        (None, {'fields': ('username', 'email', 'password')}),
+        ('Personal info', {'fields': ('name', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture')}),
+        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+        ('Role', {'fields': ('role',)}),
+    )
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('username', 'email', 'password1', 'password2', 'role', 'is_staff', 'is_active')}
+        ),
+    )
+    search_fields = ('username', 'email', 'name')
+    ordering = ('username',)
 
-@admin.register(StudentProfile)
-class StudentProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'level', 'program', 'date_of_admission')
-    search_fields = ('user__username', 'program')
-
-@admin.register(TeacherProfile)
-class TeacherProfileAdmin(admin.ModelAdmin):
-    list_display = ('user', 'subject_taught', 'date_of_employment')
-    search_fields = ('user__username', 'subject_taught')
-
-@admin.register(OTP)
-class OTPAdmin(admin.ModelAdmin):
-    list_display = ('user', 'code', 'expiration_time')
-    search_fields = ('user__username', 'code')
+admin.site.register(User, CustomUserAdmin)
+admin.site.register(StudentProfile)
+admin.site.register(TeacherProfile)
+admin.site.register(NonTeachingStaffProfile)
+admin.site.register(OTP)

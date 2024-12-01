@@ -1,0 +1,1747 @@
+swagger: '2.0'
+info:
+  title: School Management API
+  description: API documentation for School Management System
+  termsOfService: https://www.yourapp.com/terms/
+  contact:
+    email: dennis@myssinc.com
+  license:
+    name: BSD License
+  version: v1
+host: 20.63.16.108:5000
+schemes:
+- http
+basePath: /
+consumes:
+- application/json
+produces:
+- application/json
+securityDefinitions:
+  basicAuth:
+    type: basic
+security:
+- basicAuth: []
+paths:
+  /api/inventory-data/:
+    get:
+      operationId: api_inventory-data_list
+      description: Get a list of all inventory data
+      parameters:
+      - name: item_name
+        in: query
+        description: Filter by item name
+        type: string
+      - name: category
+        in: query
+        description: Filter by category
+        type: string
+      - name: department
+        in: query
+        description: Filter by department
+        type: string
+      - name: usage_type
+        in: query
+        description: Filter by usage type
+        type: string
+      - name: description
+        in: query
+        description: Filter by description
+        type: string
+      - name: search
+        in: query
+        description: Search term
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (e.g., '-date')
+        type: string
+      responses:
+        '200':
+          description: List of inventory items fetched successfully
+        '400':
+          description: Invalid request
+        '500':
+          description: An error occurred
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      tags:
+      - api
+    post:
+      operationId: api_inventory-data_create
+      description: Create a new inventory item with file upload
+      parameters:
+      - name: itemName
+        in: formData
+        description: Name of the item
+        type: string
+      - name: category
+        in: formData
+        description: Category of the item
+        type: string
+      - name: department
+        in: formData
+        description: Department of the item
+        type: string
+      - name: usageType
+        in: formData
+        description: Usage type of the item
+        type: string
+      - name: skus
+        in: formData
+        description: Unique SKU
+        type: string
+      - name: quantity
+        in: formData
+        description: Quantity of the item
+        type: integer
+      - name: date
+        in: formData
+        description: Date of entry (e.g., YYYY-MM-DD)
+        type: string
+      - name: location
+        in: formData
+        description: Location of the item
+        type: string
+      - name: description
+        in: formData
+        description: Description of the item
+        type: string
+      - name: specifications
+        in: formData
+        description: Specifications as JSON string
+        type: string
+      - name: image
+        in: formData
+        description: Image of the item
+        type: file
+      responses:
+        '201':
+          description: Inventory item created successfully
+        '400':
+          description: Invalid input data
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    parameters: []
+  /api/payments-data/:
+    get:
+      operationId: api_payments-data_list
+      description: Get a list of all payments data
+      parameters:
+      - name: payment_id
+        in: query
+        description: Filter by payment ID
+        type: string
+      - name: search
+        in: query
+        description: Search term for payment descriptions
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (prefix with '-' for descending order)
+        type: string
+      responses:
+        '200':
+          description: List of payments data fetched successfully
+          examples:
+            application/json:
+              count: 2
+              next: null
+              previous: null
+              results:
+              - _id: 63e4f83d9b1b2e7c1e9a2e1f
+                invoiceId: INV-001
+                createdOn: '2024-10-01'
+                invoiceTo: John Doe
+                studentId: S-123
+                amount: 1500.0
+                dueDate: '2024-10-10'
+                statusType: Paid
+                imageUrl: http://example.com/image.png
+              - _id: 63e4f83d9b1b2e7c1e9a2e20
+                invoiceId: INV-002
+                createdOn: '2024-10-02'
+                invoiceTo: Jane Smith
+                studentId: S-456
+                amount: 2000.0
+                dueDate: '2024-10-15'
+                statusType: Pending
+                imageUrl: http://example.com/image2.png
+        '400':
+          description: Invalid request
+          examples:
+            application/json:
+              status: error
+              message: Invalid search term provided.
+        '500':
+          description: An error occurred while fetching payments data
+          examples:
+            application/json:
+              status: error
+              message: Failed to fetch payments data.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    post:
+      operationId: api_payments-data_create
+      description: Create a new payment record
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - invoiceId
+          - createdOn
+          - invoiceTo
+          - studentId
+          - amount
+          - dueDate
+          - statusType
+          type: object
+          properties:
+            invoiceId:
+              description: The unique invoice ID
+              type: string
+            createdOn:
+              description: 'The date the invoice was created (format: YYYY-MM-DD)'
+              type: string
+            invoiceTo:
+              description: The name of the person or entity the invoice is issued
+                to
+              type: string
+            studentId:
+              description: The ID of the student associated with the payment
+              type: string
+            amount:
+              description: The amount of the payment
+              type: number
+              format: double
+            dueDate:
+              description: 'The due date for the payment (format: YYYY-MM-DD)'
+              type: string
+            statusType:
+              description: The status of the payment (e.g., Paid, Pending)
+              type: string
+            imageUrl:
+              description: URL for any related image (optional)
+              type: string
+      responses:
+        '201':
+          description: Payment record created successfully
+          examples:
+            application/json:
+              status: success
+              payments_id: 63e4f83d9b1b2e7c1e9a2e1f
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              status: error
+              message: Required fields are missing.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    parameters: []
+  /api/students/:
+    get:
+      operationId: api_students_list
+      description: Get a list of all students
+      parameters:
+      - name: name
+        in: query
+        description: Filter by student name
+        type: string
+      - name: level
+        in: query
+        description: Filter by student level
+        type: integer
+      - name: program
+        in: query
+        description: Filter by program
+        type: string
+      - name: search
+        in: query
+        description: Search term
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (e.g., 'name', '-level')
+        type: string
+      responses:
+        '200':
+          description: A list of students
+          examples:
+            application/json:
+            - id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              email: john.lee@example.com
+              payment_status: Have Paid
+            - id: 23-00002
+              name: Jane Doe
+              level: 200
+              program: IT
+              email: jane.doe@example.com
+              payment_status: Pending
+        '400':
+          description: Invalid query parameters
+          examples:
+            application/json:
+              detail: Invalid level provided. Level must be an integer.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    post:
+      operationId: api_students_create
+      description: Create a new student
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student (auto-generated if not provided)
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '201':
+          description: Student created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    parameters: []
+  /api/students/{id}/:
+    post:
+      operationId: api_students_create
+      description: Create a new student
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student (auto-generated if not provided)
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '201':
+          description: Student created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    put:
+      operationId: api_students_update
+      description: Update a student's details
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '200':
+          description: Student updated successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input data
+          examples:
+            application/json:
+              detail: Email address is not valid.
+        '404':
+          description: Student not found
+          examples:
+            application/json:
+              detail: Student with ID 23-00001 does not exist.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    delete:
+      operationId: api_students_delete
+      description: Delete a student
+      parameters: []
+      responses:
+        '204':
+          description: Student deleted successfully
+        '404':
+          description: Student not found
+          examples:
+            application/json:
+              detail: Student with ID 23-00001 does not exist.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /api/teachers/:
+    get:
+      operationId: api_teachers_list
+      description: Get a list of all teachers with filtering, searching, and ordering
+        options
+      parameters:
+      - name: name
+        in: query
+        description: Filter by teacher name
+        type: string
+      - name: email
+        in: query
+        description: Filter by teacher email
+        type: string
+      - name: subject_taught
+        in: query
+        description: Filter by subject taught
+        type: string
+      - name: search
+        in: query
+        description: Search term to filter by name, email, or subject taught
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field name, prefix with '-' for descending order
+        type: string
+      - name: page
+        in: query
+        description: Page number for pagination
+        type: integer
+      - name: page_size
+        in: query
+        description: Number of results per page
+        type: integer
+      responses:
+        '200':
+          description: Successful retrieval of teachers list
+          examples:
+            application/json:
+              count: 2
+              next: http://127.0.0.1:8000/api/teachers/?page=2
+              previous: http://127.0.0.1:8000/api/teachers/
+              results:
+              - _id: 23-00001
+                name: Jane Doe
+                email: jane.doe@example.com
+                subject_taught: Mathematics
+              - _id: 23-00002
+                name: John Smith
+                email: john.smith@example.com
+                subject_taught: Physics
+        '400':
+          description: Invalid query parameters
+          examples:
+            application/json:
+              detail: Invalid ordering field specified.
+        '500':
+          description: An error occurred while fetching teacher data
+          examples:
+            application/json:
+              error: An error occurred while fetching teacher data.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    post:
+      operationId: api_teachers_create
+      description: Create a new teacher
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - email
+          - subject_taught
+          - date_of_employment
+          type: object
+          properties:
+            name:
+              description: The name of the teacher
+              type: string
+            image:
+              description: URL of the teacher's image (optional)
+              type: string
+            view_option:
+              description: Whether the teacher's profile is viewable
+              type: boolean
+            downloadable:
+              description: Whether the teacher's profile is downloadable
+              type: boolean
+            id:
+              description: The unique ID of the teacher (auto-generated if not provided)
+              type: string
+            contact:
+              description: The contact number of the teacher
+              type: string
+            email:
+              description: The email address of the teacher
+              type: string
+            description:
+              description: A brief description of the teacher
+              type: string
+            date_of_employment:
+              description: 'The date the teacher was employed (format: YYYY-MM-DD)'
+              type: string
+            subject_taught:
+              description: The subject taught by the teacher
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the teacher (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the teacher
+              type: string
+            teachers_in_the_same_program:
+              description: List of teachers in the same program (optional)
+              type: array
+              items:
+                type: string
+            college_degree:
+              description: The college degree of the teacher
+              type: string
+            nationality:
+              description: The nationality of the teacher
+              type: string
+            government_id:
+              description: The government ID of the teacher
+              type: string
+      responses:
+        '201':
+          description: Teacher created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: Jane Doe
+              email: jane.doe@example.com
+              subject_taught: Mathematics
+              date_of_employment: '2024-01-15'
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+        '500':
+          description: An error occurred while creating the teacher
+          examples:
+            application/json:
+              error: An error occurred while creating the teacher.
+      tags:
+      - api
+      security:
+      - basicAuth: []
+    parameters: []
+  /api/token/:
+    post:
+      operationId: api_token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/TokenObtainPair'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/TokenObtainPair'
+      tags:
+      - api
+    parameters: []
+  /api/token/refresh/:
+    post:
+      operationId: api_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/TokenRefresh'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/TokenRefresh'
+      tags:
+      - api
+    parameters: []
+  /inventory-data/:
+    get:
+      operationId: inventory-data_list
+      description: Get a list of all inventory data
+      parameters:
+      - name: item_name
+        in: query
+        description: Filter by item name
+        type: string
+      - name: category
+        in: query
+        description: Filter by category
+        type: string
+      - name: department
+        in: query
+        description: Filter by department
+        type: string
+      - name: usage_type
+        in: query
+        description: Filter by usage type
+        type: string
+      - name: description
+        in: query
+        description: Filter by description
+        type: string
+      - name: search
+        in: query
+        description: Search term
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (e.g., '-date')
+        type: string
+      responses:
+        '200':
+          description: List of inventory items fetched successfully
+        '400':
+          description: Invalid request
+        '500':
+          description: An error occurred
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      tags:
+      - inventory-data
+    post:
+      operationId: inventory-data_create
+      description: Create a new inventory item with file upload
+      parameters:
+      - name: itemName
+        in: formData
+        description: Name of the item
+        type: string
+      - name: category
+        in: formData
+        description: Category of the item
+        type: string
+      - name: department
+        in: formData
+        description: Department of the item
+        type: string
+      - name: usageType
+        in: formData
+        description: Usage type of the item
+        type: string
+      - name: skus
+        in: formData
+        description: Unique SKU
+        type: string
+      - name: quantity
+        in: formData
+        description: Quantity of the item
+        type: integer
+      - name: date
+        in: formData
+        description: Date of entry (e.g., YYYY-MM-DD)
+        type: string
+      - name: location
+        in: formData
+        description: Location of the item
+        type: string
+      - name: description
+        in: formData
+        description: Description of the item
+        type: string
+      - name: specifications
+        in: formData
+        description: Specifications as JSON string
+        type: string
+      - name: image
+        in: formData
+        description: Image of the item
+        type: file
+      responses:
+        '201':
+          description: Inventory item created successfully
+        '400':
+          description: Invalid input data
+      consumes:
+      - multipart/form-data
+      - application/x-www-form-urlencoded
+      tags:
+      - inventory-data
+      security:
+      - basicAuth: []
+    parameters: []
+  /payments-data/:
+    get:
+      operationId: payments-data_list
+      description: Get a list of all payments data
+      parameters:
+      - name: payment_id
+        in: query
+        description: Filter by payment ID
+        type: string
+      - name: search
+        in: query
+        description: Search term for payment descriptions
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (prefix with '-' for descending order)
+        type: string
+      responses:
+        '200':
+          description: List of payments data fetched successfully
+          examples:
+            application/json:
+              count: 2
+              next: null
+              previous: null
+              results:
+              - _id: 63e4f83d9b1b2e7c1e9a2e1f
+                invoiceId: INV-001
+                createdOn: '2024-10-01'
+                invoiceTo: John Doe
+                studentId: S-123
+                amount: 1500.0
+                dueDate: '2024-10-10'
+                statusType: Paid
+                imageUrl: http://example.com/image.png
+              - _id: 63e4f83d9b1b2e7c1e9a2e20
+                invoiceId: INV-002
+                createdOn: '2024-10-02'
+                invoiceTo: Jane Smith
+                studentId: S-456
+                amount: 2000.0
+                dueDate: '2024-10-15'
+                statusType: Pending
+                imageUrl: http://example.com/image2.png
+        '400':
+          description: Invalid request
+          examples:
+            application/json:
+              status: error
+              message: Invalid search term provided.
+        '500':
+          description: An error occurred while fetching payments data
+          examples:
+            application/json:
+              status: error
+              message: Failed to fetch payments data.
+      tags:
+      - payments-data
+      security:
+      - basicAuth: []
+    post:
+      operationId: payments-data_create
+      description: Create a new payment record
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - invoiceId
+          - createdOn
+          - invoiceTo
+          - studentId
+          - amount
+          - dueDate
+          - statusType
+          type: object
+          properties:
+            invoiceId:
+              description: The unique invoice ID
+              type: string
+            createdOn:
+              description: 'The date the invoice was created (format: YYYY-MM-DD)'
+              type: string
+            invoiceTo:
+              description: The name of the person or entity the invoice is issued
+                to
+              type: string
+            studentId:
+              description: The ID of the student associated with the payment
+              type: string
+            amount:
+              description: The amount of the payment
+              type: number
+              format: double
+            dueDate:
+              description: 'The due date for the payment (format: YYYY-MM-DD)'
+              type: string
+            statusType:
+              description: The status of the payment (e.g., Paid, Pending)
+              type: string
+            imageUrl:
+              description: URL for any related image (optional)
+              type: string
+      responses:
+        '201':
+          description: Payment record created successfully
+          examples:
+            application/json:
+              status: success
+              payments_id: 63e4f83d9b1b2e7c1e9a2e1f
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              status: error
+              message: Required fields are missing.
+      tags:
+      - payments-data
+      security:
+      - basicAuth: []
+    parameters: []
+  /students/:
+    get:
+      operationId: students_list
+      description: Get a list of all students
+      parameters:
+      - name: name
+        in: query
+        description: Filter by student name
+        type: string
+      - name: level
+        in: query
+        description: Filter by student level
+        type: integer
+      - name: program
+        in: query
+        description: Filter by program
+        type: string
+      - name: search
+        in: query
+        description: Search term
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field (e.g., 'name', '-level')
+        type: string
+      responses:
+        '200':
+          description: A list of students
+          examples:
+            application/json:
+            - id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              email: john.lee@example.com
+              payment_status: Have Paid
+            - id: 23-00002
+              name: Jane Doe
+              level: 200
+              program: IT
+              email: jane.doe@example.com
+              payment_status: Pending
+        '400':
+          description: Invalid query parameters
+          examples:
+            application/json:
+              detail: Invalid level provided. Level must be an integer.
+      tags:
+      - students
+      security:
+      - basicAuth: []
+    post:
+      operationId: students_create
+      description: Create a new student
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student (auto-generated if not provided)
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '201':
+          description: Student created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+      tags:
+      - students
+      security:
+      - basicAuth: []
+    parameters: []
+  /students/{id}/:
+    post:
+      operationId: students_create
+      description: Create a new student
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student (auto-generated if not provided)
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '201':
+          description: Student created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+      tags:
+      - students
+      security:
+      - basicAuth: []
+    put:
+      operationId: students_update
+      description: Update a student's details
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - level
+          - program
+          - email
+          type: object
+          properties:
+            name:
+              description: The name of the student
+              type: string
+            id:
+              description: The unique ID of the student
+              type: string
+            level:
+              description: The academic level of the student
+              type: integer
+            program:
+              description: The program the student is enrolled in
+              type: string
+            gender:
+              description: The gender of the student
+              type: string
+            contact:
+              description: The contact number of the student
+              type: string
+            description:
+              description: A brief description of the student
+              type: string
+            date_of_admission:
+              description: 'The date the student was admitted (format: YYYY-MM-DD)'
+              type: string
+            payment_status:
+              description: The payment status of the student
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the student (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the student
+              type: string
+            email:
+              description: The email address of the student
+              type: string
+            intake:
+              description: The intake period of the student
+              type: string
+            official_receipt:
+              description: Path to the official receipt file
+              type: string
+            payment_method:
+              description: The method of payment
+              type: string
+            date:
+              description: 'The date of payment (if applicable, format: YYYY-MM-DD)'
+              type: string
+            amount_due:
+              description: The amount due for the student
+              type: string
+            tuition_fee:
+              description: The tuition fee for the student
+              type: string
+            miscellaneous:
+              description: Any miscellaneous charges
+              type: string
+            balance:
+              description: The balance amount for the student
+              type: string
+            remarks:
+              description: Any remarks regarding the student
+              type: string
+            nationality:
+              description: The nationality of the student
+              type: string
+            government_id:
+              description: The government ID of the student
+              type: string
+            medical_forms:
+              description: Path to medical forms (optional)
+              type: string
+            student_id_card:
+              description: Path to the student ID card (optional)
+              type: string
+            admission_letter:
+              description: Path to the admission letter (optional)
+              type: string
+            imageUrl:
+              description: URL of the student's image (optional)
+              type: string
+      responses:
+        '200':
+          description: Student updated successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: John Lee
+              level: 100
+              program: OFAD
+              payment_status: Have Paid
+        '400':
+          description: Invalid input data
+          examples:
+            application/json:
+              detail: Email address is not valid.
+        '404':
+          description: Student not found
+          examples:
+            application/json:
+              detail: Student with ID 23-00001 does not exist.
+      tags:
+      - students
+      security:
+      - basicAuth: []
+    delete:
+      operationId: students_delete
+      description: Delete a student
+      parameters: []
+      responses:
+        '204':
+          description: Student deleted successfully
+        '404':
+          description: Student not found
+          examples:
+            application/json:
+              detail: Student with ID 23-00001 does not exist.
+      tags:
+      - students
+      security:
+      - basicAuth: []
+    parameters:
+    - name: id
+      in: path
+      required: true
+      type: string
+  /teachers/:
+    get:
+      operationId: teachers_list
+      description: Get a list of all teachers with filtering, searching, and ordering
+        options
+      parameters:
+      - name: name
+        in: query
+        description: Filter by teacher name
+        type: string
+      - name: email
+        in: query
+        description: Filter by teacher email
+        type: string
+      - name: subject_taught
+        in: query
+        description: Filter by subject taught
+        type: string
+      - name: search
+        in: query
+        description: Search term to filter by name, email, or subject taught
+        type: string
+      - name: ordering
+        in: query
+        description: Order by field name, prefix with '-' for descending order
+        type: string
+      - name: page
+        in: query
+        description: Page number for pagination
+        type: integer
+      - name: page_size
+        in: query
+        description: Number of results per page
+        type: integer
+      responses:
+        '200':
+          description: Successful retrieval of teachers list
+          examples:
+            application/json:
+              count: 2
+              next: http://127.0.0.1:8000/api/teachers/?page=2
+              previous: http://127.0.0.1:8000/api/teachers/
+              results:
+              - _id: 23-00001
+                name: Jane Doe
+                email: jane.doe@example.com
+                subject_taught: Mathematics
+              - _id: 23-00002
+                name: John Smith
+                email: john.smith@example.com
+                subject_taught: Physics
+        '400':
+          description: Invalid query parameters
+          examples:
+            application/json:
+              detail: Invalid ordering field specified.
+        '500':
+          description: An error occurred while fetching teacher data
+          examples:
+            application/json:
+              error: An error occurred while fetching teacher data.
+      tags:
+      - teachers
+      security:
+      - basicAuth: []
+    post:
+      operationId: teachers_create
+      description: Create a new teacher
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          required:
+          - name
+          - email
+          - subject_taught
+          - date_of_employment
+          type: object
+          properties:
+            name:
+              description: The name of the teacher
+              type: string
+            image:
+              description: URL of the teacher's image (optional)
+              type: string
+            view_option:
+              description: Whether the teacher's profile is viewable
+              type: boolean
+            downloadable:
+              description: Whether the teacher's profile is downloadable
+              type: boolean
+            id:
+              description: The unique ID of the teacher (auto-generated if not provided)
+              type: string
+            contact:
+              description: The contact number of the teacher
+              type: string
+            email:
+              description: The email address of the teacher
+              type: string
+            description:
+              description: A brief description of the teacher
+              type: string
+            date_of_employment:
+              description: 'The date the teacher was employed (format: YYYY-MM-DD)'
+              type: string
+            subject_taught:
+              description: The subject taught by the teacher
+              type: string
+            date_of_birth:
+              description: 'The date of birth of the teacher (format: YYYY-MM-DD)'
+              type: string
+            address:
+              description: The address of the teacher
+              type: string
+            teachers_in_the_same_program:
+              description: List of teachers in the same program (optional)
+              type: array
+              items:
+                type: string
+            college_degree:
+              description: The college degree of the teacher
+              type: string
+            nationality:
+              description: The nationality of the teacher
+              type: string
+            government_id:
+              description: The government ID of the teacher
+              type: string
+      responses:
+        '201':
+          description: Teacher created successfully
+          examples:
+            application/json:
+              id: 23-00001
+              name: Jane Doe
+              email: jane.doe@example.com
+              subject_taught: Mathematics
+              date_of_employment: '2024-01-15'
+        '400':
+          description: Invalid input
+          examples:
+            application/json:
+              detail: Email address is not valid.
+        '500':
+          description: An error occurred while creating the teacher
+          examples:
+            application/json:
+              error: An error occurred while creating the teacher.
+      tags:
+      - teachers
+      security:
+      - basicAuth: []
+    parameters: []
+  /token/:
+    post:
+      operationId: token_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/TokenObtainPair'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/TokenObtainPair'
+      tags:
+      - token
+    parameters: []
+  /token/refresh/:
+    post:
+      operationId: token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      parameters:
+      - name: data
+        in: body
+        required: true
+        schema:
+          $ref: '#/definitions/TokenRefresh'
+      responses:
+        '201':
+          description: ''
+          schema:
+            $ref: '#/definitions/TokenRefresh'
+      tags:
+      - token
+    parameters: []
+definitions:
+  TokenObtainPair:
+    required:
+    - username
+    - password
+    type: object
+    properties:
+      username:
+        title: Username
+        type: string
+        minLength: 1
+      password:
+        title: Password
+        type: string
+        minLength: 1
+  TokenRefresh:
+    required:
+    - refresh
+    type: object
+    properties:
+      refresh:
+        title: Refresh
+        type: string
+        minLength: 1
+      access:
+        title: Access
+        type: string
+        readOnly: true
+        minLength: 1

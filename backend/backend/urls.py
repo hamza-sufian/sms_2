@@ -17,7 +17,7 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 from django.views.generic import RedirectView
-from django.contrib.auth.views import LoginView
+from api.admin_views import AdminOTPLoginView, AdminOTPVerifyView
 
 urlpatterns = []
 
@@ -44,7 +44,9 @@ urlpatterns += [
     path('api/', include('api.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('favicon.ico', RedirectView.as_view(url='/static/favicon.ico')),
-    path('accounts/login/', LoginView.as_view(), name='login'),
+    path('admin/login/', AdminOTPLoginView.as_view(), name='admin_login'),
+    path('admin/otp-verify/', AdminOTPVerifyView.as_view(), name='admin_otp_verify'),
+    path('', RedirectView.as_view(url='/admin/', permanent=False)),
 ]
 
 
