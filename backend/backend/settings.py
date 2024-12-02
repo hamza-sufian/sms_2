@@ -49,11 +49,12 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'api',
     'drf_yasg',
     'rest_framework',
     'rest_framework.authtoken',
     'corsheaders',
+    'api.apps.ApiConfig',
+    'django_filters',
 ]
 
 MIDDLEWARE = [
@@ -65,6 +66,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
+    'backend.csrf_neg.DisableCSRFCheckMiddleware',
 ]
 
 ROOT_URLCONF = 'backend.urls'
@@ -101,7 +103,6 @@ DATABASES = {
         'PORT': os.getenv('DB_PORT'),
     }
 }
-
 
 
 REST_FRAMEWORK = {

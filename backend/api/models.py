@@ -1,3 +1,4 @@
+import datetime
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.timezone import now
@@ -5,13 +6,15 @@ from django.conf import settings
 from django.core.validators import MinValueValidator
 
 # Role Model for defining user roles
+
+
 class Role(models.Model):
     name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
-    
-    
+
+
 # Custom User Manager
 class UserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -26,7 +29,8 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('role', 'ADMIN')  # Force role to ADMIN for superusers
+        # Force role to ADMIN for superusers
+        extra_fields.setdefault('role', 'ADMIN')
 
         if extra_fields.get('is_staff') is not True:
             raise ValueError('Superuser must have is_staff=True.')
@@ -40,18 +44,20 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('ADMIN', 'Admin'),
         ('STUDENT', 'Student'),
-        ('TEACHING_STAFF', 'Teaching Staff'),
+        ('TEACHER', 'Teaching Staff'),
         ('NON_TEACHING_STAFF', 'Non-Teaching Staff'),
     ]
     name = models.CharField(max_length=100, null=True, blank=True)
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default='STUDENT')
+    role = models.CharField(
+        max_length=20, choices=ROLE_CHOICES, default='STUDENT')
     contact = models.CharField(max_length=15, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
     nationality = models.CharField(max_length=50, null=True, blank=True)
     government_id = models.CharField(max_length=100, null=True, blank=True)
     email_verified = models.BooleanField(default=False)
-    profile_picture = models.ImageField(upload_to='uploads/profile_pictures/', null=True, blank=True)
+    profile_picture = models.ImageField(
+        upload_to='uploads/profile_pictures/', null=True, blank=True)
     email = models.EmailField(unique=True)
 
     USERNAME_FIELD = 'email'  # Use email as the unique login identifier
@@ -59,25 +65,26 @@ class User(AbstractUser):
 
     objects = UserManager()  # Link to the custom manager
 
-    def save(self, *args, **kwargs):
-        # Ensure that superusers always have the ADMIN role
-        if self.is_superuser and self.role != 'ADMIN':
-            self.role = 'ADMIN'
-        super().save(*args, **kwargs)
+    def is_admin(self):
+        return self.role == 'ADMIN'
 
     def __str__(self):
-        return f"{self.username} ({self.role})"
-
+        return self.username
 
 # Student Profile Model
+
+
 class StudentProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="student_profile")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="student_profile")
     level = models.CharField(max_length=20, null=True, blank=True)
     program = models.CharField(max_length=100, null=True, blank=True)
     intake = models.CharField(max_length=50, null=True, blank=True)
     date_of_admission = models.DateField(null=True, blank=True)
-    tuition_fee = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
-    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    tuition_fee = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    balance = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
     remarks = models.TextField(null=True, blank=True)
     profile_image = models.ImageField(null=True, blank=True)
     medical_forms = models.FileField(null=True, blank=True)
@@ -85,16 +92,26 @@ class StudentProfile(models.Model):
     payment_method = models.CharField(max_length=50, null=True, blank=True)
     payment_status = models.CharField(max_length=50, null=True, blank=True)
     payment_date = models.DateField(null=True, blank=True)
-    amount_due = models.DecimalField(max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+    amount_due = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
 
     def __str__(self):
         return f"Student Profile for {self.user.username}"
 
+    def is_student(self):
+        return self.role == 'STUDENT'
+
+
 # Teacher Profile Model
+
+
 class TeacherProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="teacher_profile")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="teacher_profile")
     subject_taught = models.CharField(max_length=100)
-    date_of_employment = models.DateField()
+    department = models.CharField(max_length=100, null=True, blank=True)
+    date_of_employment = models.DateField(
+        null=False, default=datetime.date.today)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
     teachers_in_the_same_program = models.TextField(null=True, blank=True)
     image = models.ImageField(null=True, blank=True)
@@ -102,20 +119,30 @@ class TeacherProfile(models.Model):
     def __str__(self):
         return f"Teacher Profile for {self.user.username}"
 
+    def is_teacher(self):
+        return self.role == 'TEACHING_STAFF'
+
+
 class NonTeachingStaffProfile(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="non_teaching_staff_profile")
+    user = models.OneToOneField(
+        User, on_delete=models.CASCADE, related_name="non_teaching_staff_profile")
     position = models.CharField(max_length=100)
     image = models.ImageField(null=True, blank=True)
     date_of_employment = models.DateField()
     department = models.CharField(max_length=100, null=True, blank=True)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
-    
+
     def __str__(self):
         return f"Non-Teaching Staff Profile for {self.user.username}"
 
+    def is_non_teaching_staff(self):
+        return self.role == 'NON_TEACHING_STAFF'
 # OTP Model for storing OTP information
+
+
 class OTP(models.Model):
-    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="otp")
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="otp")
     code = models.CharField(max_length=6)
     expiration_time = models.DateTimeField()
 

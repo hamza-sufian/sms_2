@@ -1,330 +1,348 @@
-from rest_framework import status
-from rest_framework.permissions import IsAdminUser
+from rest_framework import status, generics
 from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
-from rest_framework import serializers
+from .serializers import (
+    StudentProfileSerializer,
+    TeacherProfileSerializer,
+    NonTeachingStaffProfileSerializer,
+    UserSerializer
+)
+from .models import StudentProfile, TeacherProfile, NonTeachingStaffProfile, User
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-from django.core.mail import send_mail
-from django.conf import settings
-from .models import User, OTP
-from .serializers import UserSerializer
-from datetime import timedelta
-import random
-from django.utils.timezone import now
-from django.shortcuts import get_object_or_404
+from rest_framework.pagination import PageNumberPagination
 
-class AdminCreateUserView(APIView):
-    permission_classes = [IsAdminUser]
+
+class StandardResultsSetPagination(PageNumberPagination):
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+
+class UserCreateView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class StudentProfileListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = StudentProfile.objects.all()
+    serializer_class = StudentProfileSerializer
 
     @swagger_auto_schema(
-        operation_description="Create a new user and send credentials to their email.",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username of the user'),
-                'email': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s email address'),
-                'password': openapi.Schema(type=openapi.TYPE_STRING, description='Password for the user'),
-                'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role of the user', enum=['STUDENT', 'TEACHING_STAFF', 'NON_TEACHING_STAFF']),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Full name of the user'),
-                'contact': openapi.Schema(type=openapi.TYPE_STRING, description='Contact number of the user'),
-                'date_of_birth': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE, description='Date of birth of the user'),
-                'address': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s address'),
-                'nationality': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s nationality'),
-                'government_id': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s government-issued ID'),
-                'profile_picture': openapi.Schema(type=openapi.TYPE_FILE, description='Profile picture of the user'),
-            },
-            required=['username', 'email', 'password', 'role']
-        ),
+        operation_description="Create a new student profile",
+        request_body=StudentProfileSerializer,
         responses={
             status.HTTP_201_CREATED: openapi.Response(
-                description="User created successfully.",
-                examples={
-                    'application/json': {
-                        "message": "User created successfully, credentials sent to email."
-                    }
-                }
+                description="Student profile created successfully",
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input data.",
-                examples={
-                    'application/json': {
-                        "detail": "Some required fields are missing or invalid."
-                    }
-                }
-            )
+                description="Invalid data provided"
+            ),
         }
     )
     def post(self, request, *args, **kwargs):
-        serializer = UserSerializer(data=request.data)
+        serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save()
-            role = request.data['role']
-            
-            # populate the appropriate table based on the role
-            if role == 'STUDENT':
-                StudentProfile.objects.create(user=user)    
-            elif role == 'TEACHING_STAFF':
-                TeacherProfile.objects.create(user=user)
-            elif role == 'NON_TEACHING_STAFF':
-                NonTeachingStaffProfile.objects.create(user=user)
-
-            # Generate password
-            password = request.data['password']
-
-            # Send credentials to user via email
-            subject = "Your account credentials"
-            message = f"""
-            Hello {user.username},
-
-            Your account has been created successfully.
-            Username: {user.username}
-            Password: {password}
-
-            Please login to access your account.
-            """
-            try:
-                send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
-            except Exception as e:
-                return Response({"error": "User created, but email could not be sent.", "details": str(e)},
-                                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-            return Response({"message": "User created successfully, credentials sent to email."},
-                            status=status.HTTP_201_CREATED)
-
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    @swagger_auto_schema(
-        operation_description="Retrieve user details or list of all users.",
+
+class StudentProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = StudentProfile.objects.all()
+    serializer_class = StudentProfileSerializer
+    pagination_class = StandardResultsSetPagination
+
+    @ swagger_auto_schema(
+        operation_description="Get a list of all student profiles",
+        manual_parameters=[
+            openapi.Parameter('level', openapi.IN_QUERY,
+                              description="Filter by student level", type=openapi.TYPE_INTEGER),
+            openapi.Parameter('program', openapi.IN_QUERY,
+                              description="Filter by program", type=openapi.TYPE_STRING),
+            openapi.Parameter('intake', openapi.IN_QUERY,
+                              description="Filter by intake", type=openapi.TYPE_STRING),
+            openapi.Parameter('search', openapi.IN_QUERY,
+                              description="Search term for student profiles", type=openapi.TYPE_STRING),
+            openapi.Parameter('ordering', openapi.IN_QUERY,
+                              description="Order by field (e.g., 'name', '-level')", type=openapi.TYPE_STRING),
+        ],
         responses={
             status.HTTP_200_OK: openapi.Response(
-                description="User details",
+                description='A list of student profiles',
                 examples={
-                    'application/json': {
-                        "id": "1",
-                        "username": "john_doe",
-                        "email": "john.doe@example.com",
-                        "role": "STUDENT",
-                        "name": "John Doe",
-                        "contact": "123456789",
-                        "date_of_birth": "2000-01-01",
-                        "address": "123 Street Name",
-                        "nationality": "Ghanaian",
-                        "government_id": "GHA-123456",
-                        "profile_picture": "http://example.com/image.jpg"
-                    }
+                    'application/json': [
+                        {
+                            "id": "23-00001",
+                            "user": {
+                                "id": 1,
+                                "username": "john.doe",
+                                "email": "john.doe@example.com",
+                                "name": "John Doe",
+                                "contact": "1234567890",
+                                "date_of_birth": "2000-01-01",
+                                "address": "123 Main St",
+                                "nationality": "American",
+                                "government_id": "A12345678",
+                                "email_verified": True,
+                            },
+                            "level": 100,
+                            "program": "OFAD",
+                            "intake": "2023",
+                            "tuition_fee": 10000.00,
+                            "balance": 5000.00,
+                            "remarks": "Excellent",
+                            "profile_image": "/path/to/image.jpg",
+                            "amount_due": 5000.00,
+                            "medical_forms": "/path/to/form.pdf",
+                            "admission_letter": "/path/to/admission.pdf",
+                            "payment_method": "Credit Card",
+                            "payment_status": "Paid",
+                            "payment_date": "2023-06-15",
+                        }
+                    ]
                 }
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid query parameters",
+                description='Invalid query parameters',
                 examples={
                     'application/json': {
-                        "detail": "Invalid request format"
+                        "detail": "Invalid level provided. Level must be an integer."
                     }
                 }
             ),
         }
     )
     def get(self, request, *args, **kwargs):
-        user_id = self.request.query_params.get('id')
-        if user_id:
-            user = get_object_or_404(User, id=user_id)
-            serializer = UserSerializer(user)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        else:
-            users = User.objects.all()
-            serializer = UserSerializer(users, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
     @swagger_auto_schema(
-        operation_description="Update user details.",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'username': openapi.Schema(type=openapi.TYPE_STRING, description='Username of the user'),
-                'email': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s email address'),
-                'role': openapi.Schema(type=openapi.TYPE_STRING, description='Role of the user'),
-                'name': openapi.Schema(type=openapi.TYPE_STRING, description='Full name of the user'),
-                'contact': openapi.Schema(type=openapi.TYPE_STRING, description='Contact number of the user'),
-                'date_of_birth': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE, description='Date of birth of the user'),
-                'address': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s address'),
-                'nationality': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s nationality'),
-                'government_id': openapi.Schema(type=openapi.TYPE_STRING, description='User\'s government-issued ID'),
-                'profile_picture': openapi.Schema(type=openapi.TYPE_FILE, description='Profile picture of the user'),
-            },
-            required=['email']
-        ),
+        operation_description="Update a student profile",
+        request_body=StudentProfileSerializer,
         responses={
             status.HTTP_200_OK: openapi.Response(
-                description="User updated successfully.",
-                examples={
-                    'application/json': {
-                        "message": "User updated successfully.",
-                        "data": {
-                            "id": "1",
-                            "username": "john_doe",
-                            "email": "john.doe@example.com",
-                            "role": "STUDENT"
-                        }
-                    }
-                }
+                description="Student profile updated successfully",
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input data.",
-                examples={
-                    'application/json': {
-                        "detail": "Some fields are invalid."
-                    }
-                }
-            )
+                description="Invalid data provided"
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Student profile not found"
+            ),
         }
     )
     def put(self, request, *args, **kwargs):
-        user_id = self.request.data.get('id')
-        if not user_id:
-            return Response({"error": "User ID is required to update a user."}, status=status.HTTP_400_BAD_REQUEST)
-
-        user = get_object_or_404(User, id=user_id)
-        serializer = UserSerializer(user, data=request.data, partial=True)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
         if serializer.is_valid():
             serializer.save()
-            return Response({"message": "User updated successfully.", "data": serializer.data}, status=status.HTTP_200_OK)
+            return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @swagger_auto_schema(
-        operation_description="Delete a user.",
-        request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            properties={
-                'id': openapi.Schema(type=openapi.TYPE_INTEGER, description="User ID to delete")
-            }
-        ),
+        operation_description="Delete a student profile",
         responses={
-            status.HTTP_200_OK: openapi.Response(
-                description="User deleted successfully.",
-                examples={
-                    'application/json': {
-                        "message": "User deleted successfully."
-                    }
-                }
+            status.HTTP_204_NO_CONTENT: openapi.Response(
+                description="Student profile deleted successfully"
             ),
-            status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid input data.",
-                examples={
-                    'application/json': {
-                        "detail": "User ID is required."
-                    }
-                }
-            )
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Student profile not found"
+            ),
         }
     )
     def delete(self, request, *args, **kwargs):
-        user_id = self.request.data.get('id')
-        if not user_id:
-            return Response({"error": "User ID is required to delete a user."}, status=status.HTTP_400_BAD_REQUEST)
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
-        user = get_object_or_404(User, id=user_id)
-        user.delete()
-        return Response({"message": "User deleted successfully."}, status=status.HTTP_200_OK)
+# View for TeacherProfile CRUD operations
 
 
-class OTPLoginView(APIView):
+class TeacherProfileListCreateView(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = TeacherProfile.objects.all()
+    serializer_class = TeacherProfileSerializer
+
     @swagger_auto_schema(
-        operation_description="Generate OTP and send to user's email for login",
+        operation_description="Create a new teacher profile",
+        request_body=TeacherProfileSerializer,
         responses={
-            status.HTTP_200_OK: openapi.Response(
-                description="OTP sent to email",
-                examples={
-                    'application/json': {
-                        "message": "OTP sent to your email."
-                    }
-                }
+            status.HTTP_201_CREATED: openapi.Response(
+                description="Teacher profile created successfully",
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Email is required",
-                examples={
-                    'application/json': {
-                        "error": "Email is required."
-                    }
-                }
+                description="Invalid data provided"
             ),
         }
     )
     def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        if not email:
-            return Response({"error": "Email is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
-
-        # Generate OTP
-        otp_code = f"{random.randint(100000, 999999)}"
-        expiration_time = now() + timedelta(minutes=10)
-
-        # Store OTP in the database
-        OTP.objects.update_or_create(user=user, defaults={"code": otp_code, "expiration_time": expiration_time})
-
-        # Send OTP to user's email
-        subject = "Your OTP Code"
-        message = f"""
-        Hello {user.username},
-
-        Your OTP code for logging in is: {otp_code}
-        It will expire in 10 minutes.
-        """
-        try:
-            send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
-        except Exception as e:
-            return Response({"error": "OTP could not be sent.", "details": str(e)},
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-        return Response({"message": "OTP sent to your email."}, status=status.HTTP_200_OK)
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class OTPVerifyView(APIView):
+class TeacherProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticated]
+    queryset = TeacherProfile.objects.all()
+    serializer_class = TeacherProfileSerializer
+    pagination_class = StandardResultsSetPagination
+
     @swagger_auto_schema(
-        operation_description="Verify OTP for login",
+        operation_description="Retrieve a teacher profile",
         responses={
             status.HTTP_200_OK: openapi.Response(
-                description="OTP verified successfully",
-                examples={
-                    'application/json': {
-                        "message": "OTP verified successfully."
-                    }
-                }
+                description="Teacher profile retrieved successfully",
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Teacher profile not found"
+            ),
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @swagger_auto_schema(
+        operation_description="Update a teacher profile",
+        request_body=TeacherProfileSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Teacher profile updated successfully",
             ),
             status.HTTP_400_BAD_REQUEST: openapi.Response(
-                description="Invalid OTP or OTP expired",
-                examples={
-                    'application/json': {
-                        "error": "Invalid OTP or OTP has expired."
-                    }
-                }
+                description="Invalid data provided"
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Teacher profile not found"
+            ),
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @swagger_auto_schema(
+        operation_description="Delete a teacher profile",
+        responses={
+            status.HTTP_204_NO_CONTENT: openapi.Response(
+                description="Teacher profile deleted successfully"
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Teacher profile not found"
+            ),
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+# View for NonTeachingStaffProfile CRUD operations
+
+
+class NonTeachingStaffProfileListCreateView(generics.ListCreateAPIView):
+    # Ensure the correct model for non-teaching staff
+    permission_classes = [IsAuthenticated]
+    queryset = NonTeachingStaffProfile.objects.all()
+    serializer_class = NonTeachingStaffProfileSerializer
+
+    @swagger_auto_schema(
+        operation_description="Create a new non-teaching staff profile",
+        request_body=NonTeachingStaffProfileSerializer,
+        responses={
+            status.HTTP_201_CREATED: openapi.Response(
+                description="Non-teaching staff profile created successfully",
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Invalid data provided"
             ),
         }
     )
     def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        otp_code = request.data.get('otp')
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        if not email or not otp_code:
-            return Response({"error": "Email and OTP are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user = User.objects.get(email=email)
-            otp = OTP.objects.get(user=user)
-        except (User.DoesNotExist, OTP.DoesNotExist):
-            return Response({"error": "Invalid email or OTP."}, status=status.HTTP_404_NOT_FOUND)
+class NonTeachingStaffProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
+    # Ensure the correct model for non-teaching staff
+    permission_classes = [IsAuthenticated]
+    queryset = NonTeachingStaffProfile.objects.all()
+    serializer_class = NonTeachingStaffProfileSerializer
+    pagination_class = StandardResultsSetPagination
 
-        # Check if OTP is valid
-        if otp.code != otp_code:
-            return Response({"error": "Invalid OTP."}, status=status.HTTP_400_BAD_REQUEST)
+    @swagger_auto_schema(
+        operation_description="Retrieve a non-teaching staff profile",
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Non-teaching staff profile retrieved successfully",
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Non-teaching staff profile not found"
+            ),
+        }
+    )
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
 
-        if now() > otp.expiration_time:
-            return Response({"error": "OTP has expired."}, status=status.HTTP_400_BAD_REQUEST)
+    @swagger_auto_schema(
+        operation_description="Update a non-teaching staff profile",
+        request_body=NonTeachingStaffProfileSerializer,
+        responses={
+            status.HTTP_200_OK: openapi.Response(
+                description="Non-teaching staff profile updated successfully",
+            ),
+            status.HTTP_400_BAD_REQUEST: openapi.Response(
+                description="Invalid data provided"
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Non-teaching staff profile not found"
+            ),
+        }
+    )
+    def put(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        # OTP verified successfully
-        return Response({"message": "OTP verified successfully."}, status=status.HTTP_200_OK)
+    @swagger_auto_schema(
+        operation_description="Delete a non-teaching staff profile",
+        responses={
+            status.HTTP_204_NO_CONTENT: openapi.Response(
+                description="Non-teaching staff profile deleted successfully"
+            ),
+            status.HTTP_404_NOT_FOUND: openapi.Response(
+                description="Non-teaching staff profile not found"
+            ),
+        }
+    )
+    def delete(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
