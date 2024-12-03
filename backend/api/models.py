@@ -44,7 +44,7 @@ class User(AbstractUser):
     ROLE_CHOICES = [
         ('ADMIN', 'Admin'),
         ('STUDENT', 'Student'),
-        ('TEACHER', 'Teaching Staff'),
+        ('TEACHER_STAFF', 'Teaching Staff'),
         ('NON_TEACHING_STAFF', 'Non-Teaching Staff'),
     ]
     name = models.CharField(max_length=100, null=True, blank=True)
@@ -68,8 +68,13 @@ class User(AbstractUser):
     def is_admin(self):
         return self.role == 'ADMIN'
 
+    def save(self, *args, **kwargs):
+        if not self.name and (self.first_name or self.last_name):
+            self.name = f"{self.first_name} {self.last_name}".strip()
+        super().save(*args, **kwargs)
+
     def __str__(self):
-        return self.username
+        return self.name if self.name else self.username
 
 # Student Profile Model
 

@@ -12,26 +12,28 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = [
-            'id', 'username', 'email', 'name', 'role', 'contact',
+            'id', 'username', 'email', 'name', 'first_name', 'last_name', 'role', 'contact',
             'date_of_birth', 'address', 'nationality', 'government_id',
             'email_verified', 'profile_picture', 'password'
         ]
+        read_only_fields = ['name']
         extra_kwargs = {
             'email': {'required': True},
             'username': {'required': True},
         }
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
-        user = User(**validated_data)
-        user.set_password(password)
-        user.save()
-        return user
+        first_name = validated_data.get('first_name', '')
+        last_name = validated_data.get('last_name', '')
+        name = f"{first_name} {last_name}".strip()
+        validated_data['name'] = name
+        return super().create(validated_data)
 
     def update(self, instance, validated_data):
-        password = validated_data.pop('password', None)
-        if password:
-            instance.set_password(password)
+        first_name = validated_data.get('first_name', instance.first_name)
+        last_name = validated_data.get('last_name', instance.last_name)
+        name = f"{first_name} {last_name}".strip()
+        validated_data['name'] = name
         return super().update(instance, validated_data)
 
 
