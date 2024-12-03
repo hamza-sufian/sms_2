@@ -3,6 +3,7 @@ from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.db import models
 from django.utils.timezone import now
 from django.conf import settings
+from decimal import Decimal
 from django.core.validators import MinValueValidator
 
 # Role Model for defining user roles
@@ -87,18 +88,17 @@ class StudentProfile(models.Model):
     intake = models.CharField(max_length=50, null=True, blank=True)
     date_of_admission = models.DateField(null=True, blank=True)
     tuition_fee = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(Decimal('0.00'))])
     balance = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(Decimal('0.00'))])
     remarks = models.TextField(null=True, blank=True)
-    profile_image = models.ImageField(null=True, blank=True)
     medical_forms = models.FileField(null=True, blank=True)
     admission_letter = models.FileField(null=True, blank=True)
     payment_method = models.CharField(max_length=50, null=True, blank=True)
     payment_status = models.CharField(max_length=50, null=True, blank=True)
     payment_date = models.DateField(null=True, blank=True)
     amount_due = models.DecimalField(
-        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(0)])
+        max_digits=10, decimal_places=2, default=0, validators=[MinValueValidator(Decimal('0.00'))])
 
     def __str__(self):
         return f"Student Profile for {self.user.username}"
@@ -119,7 +119,6 @@ class TeacherProfile(models.Model):
         null=False, default=datetime.date.today)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
     teachers_in_the_same_program = models.TextField(null=True, blank=True)
-    image = models.ImageField(null=True, blank=True)
 
     def __str__(self):
         return f"Teacher Profile for {self.user.username}"
@@ -132,7 +131,6 @@ class NonTeachingStaffProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="non_teaching_staff_profile")
     position = models.CharField(max_length=100)
-    image = models.ImageField(null=True, blank=True)
     date_of_employment = models.DateField()
     department = models.CharField(max_length=100, null=True, blank=True)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
