@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import User, StudentProfile, TeacherProfile, NonTeachingStaffProfile
+from django.core.validators import validate_email
+from django.core.exceptions import ValidationError
+import datetime
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -11,91 +14,8 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class BaseProfileSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = None
-        fields = '__all__'
-
-    def to_representation(self, instance):
-        """Customize how the nested user is represented in the response."""
-        representation = super().to_representation(instance)
-        representation['user'] = UserSerializer(instance.user).data
-        return representation
-
-    def create(self, validated_data):
-        user_data = validated_data.pop('user')
-        user = User.objects.create(**user_data)
-        return self.Meta.model.objects.create(user=user, **validated_data)
-
-    def update(self, instance, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:  # Add all flattened user fields
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        User.objects.filter(pk=instance.user_id).update(
-            **user_data)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-        return instance
-
-
-class StudentProfileSerializer(BaseProfileSerializer):
-
     username = serializers.CharField(source='user.username', required=False)
-    email = serializers.CharField(source='user.email', required=False)
-    name = serializers.CharField(source='user.name', required=False)
-    role = serializers.CharField(source='user.role', required=False)
-    contact = serializers.CharField(source='user.contact', required=False)
-    date_of_birth = serializers.DateField(
-        source='user.date_of_birth', required=False)
-    address = serializers.CharField(source='user.address', required=False)
-    nationality = serializers.CharField(
-        source='user.nationality', required=False)
-    government_id = serializers.CharField(
-        source='user.government_id', required=False)
-    profile_picture = serializers.ImageField(
-        source='user.profile_picture', required=False)  # Added profile_picture
-
-    class Meta:
-        model = StudentProfile
-        fields = ['id', 'user', 'username', 'email', 'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture', 'level', 'program', 'intake', 'date_of_admission', 'tuition_fee', 'balance', 'remarks',
-                  'medical_forms', 'admission_letter', 'payment_method', 'payment_status', 'payment_date', 'amount_due']  # Include flattened fields
-
-    def create(self, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        # Create or update the user
-        user, created = User.objects.update_or_create(  # Use update_or_create
-            email=user_data.pop('email'), defaults=user_data
-        )
-
-        profile = StudentProfile.objects.create(user=user, **validated_data)
-        return profile
-
-    def update(self, instance, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        User.objects.filter(pk=instance.user_id).update(
-            **user_data)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-        return instance
-
-
-class TeacherProfileSerializer(BaseProfileSerializer):
-    username = serializers.CharField(source='user.username', required=False)
-    email = serializers.CharField(source='user.email', required=False)
+    email = serializers.EmailField(source='user.email', required=False)
     name = serializers.CharField(source='user.name', required=False)
     role = serializers.CharField(source='user.role', required=False)
     contact = serializers.CharField(source='user.contact', required=False)
@@ -110,42 +30,28 @@ class TeacherProfileSerializer(BaseProfileSerializer):
         source='user.profile_picture', required=False)
 
     class Meta:
-        model = TeacherProfile
-        fields = ['id', 'user', 'username', 'email', 'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'subject_taught', 'profile_picture', 'department', 'date_of_employment',
-                  'college_degree', 'teachers_in_the_same_program']
+        model = None
+        fields = []
 
-    def create(self, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user_representation = UserSerializer(instance.user).data
+        for field in user_representation:
+            if field in representation:
+                representation[field] = user_representation[field]
+        return representation
 
-        # Create or update the user
-        user, created = User.objects.update_or_create(  # Use update_or_create
-            email=user_data.pop('email'), defaults=user_data
-        )
-
-        profile = TeacherProfile.objects.create(user=user, **validated_data)
-        return profile
-
-    def update(self, instance, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:  # Add all flattened user fields
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        User.objects.filter(pk=instance.user_id).update(
-            **user_data)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-        return instance
+    def validate_email(self, value):
+        try:
+            validate_email(value)
+        except ValidationError:
+            raise serializers.ValidationError("Invalid email format")
+        return value
 
 
-class NonTeachingStaffProfileSerializer(BaseProfileSerializer):
+class StudentProfileSerializer(BaseProfileSerializer):
     username = serializers.CharField(source='user.username', required=False)
-    email = serializers.CharField(source='user.email', required=False)
+    email = serializers.EmailField(source='user.email', required=False)
     name = serializers.CharField(source='user.name', required=False)
     role = serializers.CharField(source='user.role', required=False)
     contact = serializers.CharField(source='user.contact', required=False)
@@ -156,35 +62,76 @@ class NonTeachingStaffProfileSerializer(BaseProfileSerializer):
         source='user.nationality', required=False)
     government_id = serializers.CharField(
         source='user.government_id', required=False)
+    profile_picture = serializers.ImageField(
+        source='user.profile_picture', required=False
+    )
+
+    class Meta:
+        model = StudentProfile
+        fields = BaseProfileSerializer.Meta.fields + ['id', 'level', 'program', 'intake', 'date_of_admission',
+                                                      'tuition_fee', 'balance', 'remarks', 'medical_forms', 'admission_letter',
+                                                      'payment_method', 'payment_status', 'payment_date', 'amount_due']
+
+    def validate_date_of_admission(self, value):
+        if value > datetime.date.today():
+            raise serializers.ValidationError(
+                "Date of admission cannot be in the future")
+        return value
+
+
+class TeacherProfileSerializer(BaseProfileSerializer):
+    username = serializers.CharField(source='user.username', required=False)
+    email = serializers.EmailField(source='user.email', required=False)
+    name = serializers.CharField(source='user.name', required=False)
+    role = serializers.CharField(source='user.role', required=False)
+    contact = serializers.CharField(source='user.contact', required=False)
+    date_of_birth = serializers.DateField(
+        source='user.date_of_birth', required=False)
+    address = serializers.CharField(source='user.address', required=False)
+    nationality = serializers.CharField(
+        source='user.nationality', required=False)
+    government_id = serializers.CharField(
+        source='user.government_id', required=False)
+    profile_picture = serializers.ImageField(
+        source='user.profile_picture', required=False
+    )
+
+    class Meta:
+        model = TeacherProfile
+        fields = BaseProfileSerializer.Meta.fields + ['id', 'subject_taught', 'department', 'date_of_employment',
+                                                      'college_degree', 'teachers_in_the_same_program']
+
+    def validate_date_of_employment(self, value):
+        if value > datetime.date.today():
+            raise serializers.ValidationError(
+                "Date of employment cannot be in the future")
+        return value
+
+
+class NonTeachingStaffProfileSerializer(BaseProfileSerializer):
+    username = serializers.CharField(source='user.username', required=False)
+    email = serializers.EmailField(source='user.email', required=False)
+    name = serializers.CharField(source='user.name', required=False)
+    role = serializers.CharField(source='user.role', required=False)
+    contact = serializers.CharField(source='user.contact', required=False)
+    date_of_birth = serializers.DateField(
+        source='user.date_of_birth', required=False)
+    address = serializers.CharField(source='user.address', required=False)
+    nationality = serializers.CharField(
+        source='user.nationality', required=False)
+    government_id = serializers.CharField(
+        source='user.government_id', required=False)
+    profile_picture = serializers.ImageField(
+        source='user.profile_picture', required=False
+    )
 
     class Meta:
         model = NonTeachingStaffProfile
-        fields = ['id', 'user', 'username', 'email', 'name', 'role', 'contact', 'date_of_birth', 'address',
-                  'nationality', 'government_id', 'position', 'date_of_employment', 'department', 'college_degree']
+        fields = BaseProfileSerializer.Meta.fields + \
+            ['id', 'position', 'date_of_employment', 'department', 'college_degree']
 
-    def create(self, validated_data):  # Correctly positioned outside Meta
-        user_data = {}
-        for field in ['username', 'email', 'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id']:
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        user, created = User.objects.update_or_create(
-            email=user_data.pop('email'), defaults=user_data
-        )
-        profile = NonTeachingStaffProfile.objects.create(
-            user=user, **validated_data)
-        return profile
-
-    def update(self, instance, validated_data):
-        user_data = {}
-        for field in ['username', 'email',  'name', 'role', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture']:  # Add all flattened user fields
-            if field in validated_data:
-                user_data[field] = validated_data.pop(field)
-
-        User.objects.filter(pk=instance.user_id).update(
-            **user_data)
-        for attr, value in validated_data.items():
-            setattr(instance, attr, value)
-
-        instance.save()
-        return instance
+    def validate_date_of_employment(self, value):
+        if value > datetime.date.today():
+            raise serializers.ValidationError(
+                "Date of employment cannot be in the future")
+        return value

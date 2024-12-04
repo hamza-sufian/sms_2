@@ -108,8 +108,6 @@ class StudentProfile(models.Model):
 
 
 # Teacher Profile Model
-
-
 class TeacherProfile(models.Model):
     user = models.OneToOneField(
         User, on_delete=models.CASCADE, related_name="teacher_profile")
