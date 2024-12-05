@@ -1,28 +1,29 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-from .models import User, StudentProfile, TeacherProfile, NonTeachingStaffProfile, OTP
+from .models import StudentProfile, TeacherProfile, NonTeachingStaffProfile
 
-class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'role', 'name', 'is_staff', 'is_active')
-    list_filter = ('role', 'is_staff', 'is_active')
-    fieldsets = (
-        (None, {'fields': ('username', 'email', 'password')}),
-        ('Personal info', {'fields': ('name', 'contact', 'date_of_birth', 'address', 'nationality', 'government_id', 'profile_picture')}),
-        ('Permissions', {'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')}),
-        ('Important dates', {'fields': ('last_login', 'date_joined')}),
-        ('Role', {'fields': ('role',)}),
-    )
-    add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': ('username', 'email', 'password1', 'password2', 'role', 'is_staff', 'is_active')}
-        ),
-    )
-    search_fields = ('username', 'email', 'name')
-    ordering = ('username',)
 
-admin.site.register(User, CustomUserAdmin)
-admin.site.register(StudentProfile)
-admin.site.register(TeacherProfile)
-admin.site.register(NonTeachingStaffProfile)
-admin.site.register(OTP)
+@admin.register(StudentProfile)
+class StudentProfileAdmin(admin.ModelAdmin):
+    list_display = ('get_username', 'level', 'program', 'intake')
+
+    def get_username(self, obj):
+        return obj.username
+    get_username.short_description = 'Username'
+
+
+@admin.register(TeacherProfile)
+class TeacherProfileAdmin(admin.ModelAdmin):
+    list_display = ('get_username', 'subject_taught', 'department')
+
+    def get_username(self, obj):
+        return obj.username
+    get_username.short_description = 'Username'
+
+
+@admin.register(NonTeachingStaffProfile)
+class NonTeachingStaffProfileAdmin(admin.ModelAdmin):
+    list_display = ('get_username', 'position', 'department')
+
+    def get_username(self, obj):
+        return obj.username
+    get_username.short_description = 'Username'

@@ -51,12 +51,12 @@ class StudentProfileListCreateView(BaseProfileListCreateView):
     queryset = StudentProfile.objects.all()
     serializer_class = StudentProfileSerializer
     filterset_fields = ['level', 'program',
-                        'intake', 'user__username', 'user__email']
-    search_fields = ['user__username', 'user__email',
-                     'user__name', 'program', 'level']
-    ordering = ['-user__username', 'level', 'program', 'intake']
-    ordering_fields = ['user__username',
-                       'user__email', 'level', 'program', 'intake']
+                        'intake', 'username', 'email']
+    search_fields = ['username', 'email',
+                     'program', 'level']
+    ordering = ['-username', 'level', 'program', 'intake']
+    ordering_fields = ['username',
+                       'email', 'level', 'program', 'intake']
 
     @swagger_auto_schema(
         operation_description="Create a new student profile",
@@ -148,11 +148,11 @@ class TeacherProfileListCreateView(BaseProfileListCreateView):
     queryset = TeacherProfile.objects.all()
     serializer_class = TeacherProfileSerializer
     filterset_fields = ['department', 'subject_taught',
-                        'user__username', 'user__email']
-    search_fields = ['user__username', 'user__email',
-                     'user__name', 'department', 'subject_taught']
-    ordering = ['-user__username', 'department', 'subject_taught']
-    ordering_fields = ['user__username', 'user__email',
+                        'username', 'email']
+    search_fields = ['username', 'email',
+                     'department', 'subject_taught']
+    ordering = ['-username', 'department', 'subject_taught']
+    ordering_fields = ['username', 'email',
                        'department', 'subject_taught', 'date_of_employment']
 
     @swagger_auto_schema(
@@ -230,11 +230,11 @@ class NonTeachingStaffProfileListCreateView(BaseProfileListCreateView):
     queryset = NonTeachingStaffProfile.objects.all()
     serializer_class = NonTeachingStaffProfileSerializer
     filterset_fields = ['department', 'position',
-                        'user__username', 'user__email']
-    search_fields = ['user__username', 'user__email',
-                     'user__name', 'department', 'position']
-    ordering = ['-user__username', 'department', 'position']
-    ordering_fields = ['user__username', 'user__email',
+                        'username', 'email']
+    search_fields = ['username', 'email',
+                     'department', 'position']
+    ordering = ['-username', 'department', 'position']
+    ordering_fields = ['username', 'email',
                        'department', 'position', 'date_of_employment']
 
     @swagger_auto_schema(

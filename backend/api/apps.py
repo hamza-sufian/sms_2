@@ -6,5 +6,4 @@ class ApiConfig(AppConfig):
     name = 'api'
 
     def ready(self):
-        print("Api app is ready")
         import api.signals
