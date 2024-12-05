@@ -141,6 +141,11 @@ class StudentProfile(BaseProfile):
     level = models.CharField(max_length=20, null=True, blank=True)
     program = models.CharField(max_length=100, null=True, blank=True)
     intake = models.CharField(max_length=50, null=True, blank=True)
+    student_id_card = models.FileField(upload_to='uploads/students_id_cards/',
+                                       null=True, blank=True,
+                                       validators=[
+                                           FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx']), validate_file_extension, validate_file_size]
+                                       )
     date_of_admission = models.DateField(null=True, blank=True)
     tuition_fee = models.DecimalField(
         max_digits=10,

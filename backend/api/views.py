@@ -101,6 +101,8 @@ class StudentProfileListCreateView(BaseProfileListCreateView):
                               type=openapi.TYPE_STRING, required=False),
             openapi.Parameter('intake', openapi.IN_FORM, description="Intake",
                               type=openapi.TYPE_STRING, required=False),
+            openapi.Parameter('student_id_card', openapi.IN_FORM,
+                              description="Student ID card", type=openapi.TYPE_FILE, required=False),
             openapi.Parameter('date_of_admission', openapi.IN_FORM, description="Date of admission",
                               type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE, required=False),
             openapi.Parameter('tuition_fee', openapi.IN_FORM,
