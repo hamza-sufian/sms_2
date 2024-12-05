@@ -106,8 +106,10 @@ class StudentProfile(BaseProfile):
         validators=[MinValueValidator(Decimal("0.00"))],
     )
     remarks = models.TextField(null=True, blank=True)
-    medical_forms = models.FileField(null=True, blank=True)
-    admission_letter = models.FileField(null=True, blank=True)
+    medical_forms = models.FileField(
+        upload_to="uploads/medical_forms/", null=True, blank=True)
+    admission_letter = models.FileField(
+        upload_to="uploads/admission_letters/", null=True, blank=True)
     payment_method = models.CharField(max_length=50, null=True, blank=True)
     payment_status = models.CharField(max_length=50, null=True, blank=True)
     payment_date = models.DateField(null=True, blank=True)
