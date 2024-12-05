@@ -60,7 +60,6 @@ class TeacherProfileSerializer(BaseProfileSerializer):
         return value
 
     def create(self, validated_data):
-        print(validated_data.get('subject_taught'))
         return super().create(validated_data)
 
 

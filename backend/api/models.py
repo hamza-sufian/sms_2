@@ -5,6 +5,7 @@ from decimal import Decimal
 from django.core.validators import MinValueValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from enum import Enum
+from django.core.exceptions import ValidationError
 
 # Role Enum
 
@@ -18,6 +19,11 @@ class RoleEnum(Enum):
     @classmethod
     def choices(cls):
         return [(tag.name, tag.value) for tag in cls]
+
+    def validate_role(value):
+        valid_roles = [choice[0] for choice in RoleEnum.choices()]
+        if value not in valid_roles:
+            raise ValidationError(f"'{value}' is not a valid choice.")
 
 
 # Base User Manager
@@ -73,7 +79,8 @@ class BaseProfile(models.Model):
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
     name = models.CharField(max_length=100, null=True, blank=True)
-    role = models.CharField(max_length=20, choices=RoleEnum.choices())
+    role = models.CharField(max_length=20, choices=RoleEnum.choices(), validators=[
+                            RoleEnum.validate_role])
     contact = models.CharField(max_length=15, null=True, blank=True)
     date_of_birth = models.DateField(null=True, blank=True)
     address = models.TextField(null=True, blank=True)
@@ -92,7 +99,7 @@ class StudentProfile(BaseProfile):
     level = models.CharField(max_length=20, null=True, blank=True)
     program = models.CharField(max_length=100, null=True, blank=True)
     intake = models.CharField(max_length=50, null=True, blank=True)
-    date_of_admission = models.DateField(null=True, blank=True, default=now)
+    date_of_admission = models.DateField(null=True, blank=True)
     tuition_fee = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -128,22 +135,18 @@ class StudentProfile(BaseProfile):
 class TeacherProfile(BaseProfile):
     subject_taught = models.CharField(max_length=100, null=False, blank=False)
     department = models.CharField(max_length=100, null=True, blank=True)
-    date_of_employment = models.DateField(default=now)
+    date_of_employment = models.DateField(null=True, blank=True)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
     teachers_in_the_same_program = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"Teacher Profile: {self.username}"
 
-    def save(self, *args, **kwargs):
-        print(f"Saving subject_taught: {self.subject_taught}")  # Debugging
-        super().save(*args, **kwargs)
-
 
 # Non-Teaching Staff Profile
 class NonTeachingStaffProfile(BaseProfile):
     position = models.CharField(max_length=100)
-    date_of_employment = models.DateField(default=now)
+    date_of_employment = models.DateField(null=True, blank=True)
     department = models.CharField(max_length=100, null=True, blank=True)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
 

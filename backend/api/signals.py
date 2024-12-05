@@ -3,8 +3,6 @@ from django.dispatch import receiver
 from .models import StudentProfile, TeacherProfile, NonTeachingStaffProfile
 from django.utils import timezone
 
-# Signal to create a profile when a new instance is created
-
 
 @receiver(post_save, sender=StudentProfile)
 def create_student_profile(sender, instance, created, **kwargs):
@@ -37,9 +35,6 @@ def create_non_teaching_staff_profile(sender, instance, created, **kwargs):
             instance.department = "Not Assigned"
         instance.date_of_employment = timezone.now().date()
         instance.save()
-
-
-# Signal to save profile if there are updates to any of the profiles
 
 
 @receiver(post_save, sender=StudentProfile)
