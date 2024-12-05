@@ -19,20 +19,25 @@ def create_student_profile(sender, instance, created, **kwargs):
 @receiver(post_save, sender=TeacherProfile)
 def create_teacher_profile(sender, instance, created, **kwargs):
     if created:
-        # Initialize any additional attributes or setup needed for the teacher profile
+        update_fields = []
+        if not instance.subject_taught:
+            instance.subject_taught = "Not Assigned"
+            update_fields.append('subject_taught')
+
         instance.date_of_employment = timezone.now().date()
-        # Default value, can be modified as needed
-        instance.subject_taught = "Not Assigned"
-        instance.save()
+        update_fields.append('date_of_employment')
+
+        instance.save(update_fields=update_fields)
 
 
 @receiver(post_save, sender=NonTeachingStaffProfile)
 def create_non_teaching_staff_profile(sender, instance, created, **kwargs):
     if created:
-        # Initialize any additional attributes or setup needed for the non-teaching staff profile
+        if not instance.department:
+            instance.department = "Not Assigned"
         instance.date_of_employment = timezone.now().date()
-        instance.position = "Not Assigned"  # Default value, can be modified as needed
         instance.save()
+
 
 # Signal to save profile if there are updates to any of the profiles
 

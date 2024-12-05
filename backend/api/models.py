@@ -12,7 +12,7 @@ from enum import Enum
 class RoleEnum(Enum):
     ADMIN = "Admin"
     STUDENT = "Student"
-    TEACHER_STAFF = "Teaching Staff"
+    TEACHING_STAFF = "Teaching Staff"
     NON_TEACHING_STAFF = "Non-Teaching Staff"
 
     @classmethod
@@ -126,7 +126,7 @@ class StudentProfile(BaseProfile):
 
 # Teacher Profile
 class TeacherProfile(BaseProfile):
-    subject_taught = models.CharField(max_length=100)
+    subject_taught = models.CharField(max_length=100, null=False, blank=False)
     department = models.CharField(max_length=100, null=True, blank=True)
     date_of_employment = models.DateField(default=now)
     college_degree = models.CharField(max_length=100, null=True, blank=True)
@@ -134,6 +134,10 @@ class TeacherProfile(BaseProfile):
 
     def __str__(self):
         return f"Teacher Profile: {self.username}"
+
+    def save(self, *args, **kwargs):
+        print(f"Saving subject_taught: {self.subject_taught}")  # Debugging
+        super().save(*args, **kwargs)
 
 
 # Non-Teaching Staff Profile

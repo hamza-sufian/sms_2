@@ -59,6 +59,10 @@ class TeacherProfileSerializer(BaseProfileSerializer):
                 "Date of employment cannot be in the future")
         return value
 
+    def create(self, validated_data):
+        print(validated_data.get('subject_taught'))
+        return super().create(validated_data)
+
 
 class NonTeachingStaffProfileSerializer(BaseProfileSerializer):
     class Meta:
