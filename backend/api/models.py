@@ -2,14 +2,24 @@ import datetime
 from django.db import models
 from django.utils.timezone import now
 from decimal import Decimal
-from django.core.validators import MinValueValidator
+from django.core.validators import MinValueValidator, FileExtensionValidator
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from enum import Enum
 from django.core.exceptions import ValidationError
 
+
+def validate_file_size(value):
+    if value.size > 10 * 1024 * 1024:  # 10 MB
+        raise ValidationError("File size should not exceed 10 MB.")
+
+
+def validate_file_extension(value):
+    allowed_extensions = ['pdf', 'doc', 'docx']
+    if not value.name.lower().endswith(tuple(allowed_extensions)):
+        raise ValidationError("Only PDF and DOC files are allowed.")
+
+
 # Role Enum
-
-
 class RoleEnum(Enum):
     ADMIN = "Admin"
     STUDENT = "Student"
@@ -26,7 +36,36 @@ class RoleEnum(Enum):
             raise ValidationError(f"'{value}' is not a valid choice.")
 
 
+class PaymentStatusEnum(Enum):
+    PENDING = "Pending"
+    PARTIAL = "Partial"
+    PAID = "Paid"
+    OVERDUE = "Overdue"
+
+    @classmethod
+    def choices(cls):
+        return [(tag.name, tag.value) for tag in cls]
+
+
+class PaymentMethodEnum(Enum):
+    CREDIT_CARD = 'credit_card'
+    PAYPAL = 'paypal'
+    BANK_TRANSFER = 'bank_transfer'
+    CASH = 'cash'
+    APPLE_PAY = 'apple_pay'
+    GOOGLE_PAY = 'google_pay'
+    CRYPTOCURRENCY = 'cryptocurrency'
+    CHECK = 'check'
+    GIFT_CARD = 'gift_card'
+    DIRECT_DEBIT = 'direct_debit'
+
+    @classmethod
+    def choices(cls):
+        return [(tag.name, tag.value) for tag in cls]
+
 # Base User Manager
+
+
 class CustomAdminManager(BaseUserManager):
     def create_user(self, email, username, password=None, **extra_fields):
         if not email:
@@ -87,7 +126,10 @@ class BaseProfile(models.Model):
     nationality = models.CharField(max_length=50, null=True, blank=True)
     government_id = models.CharField(max_length=100, null=True, blank=True)
     profile_picture = models.ImageField(
-        upload_to="uploads/profile_pictures/", null=True, blank=True
+        upload_to="uploads/profile_pictures/",
+        null=True, blank=True,
+        validators=[FileExtensionValidator(
+            allowed_extensions=['jpg', 'jpeg', 'png']), validate_file_size]
     )
 
     class Meta:
@@ -114,11 +156,24 @@ class StudentProfile(BaseProfile):
     )
     remarks = models.TextField(null=True, blank=True)
     medical_forms = models.FileField(
-        upload_to="uploads/medical_forms/", null=True, blank=True)
+        upload_to="uploads/medical_forms/",
+        null=True, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx']), validate_file_extension, validate_file_size]
+    )
     admission_letter = models.FileField(
-        upload_to="uploads/admission_letters/", null=True, blank=True)
-    payment_method = models.CharField(max_length=50, null=True, blank=True)
-    payment_status = models.CharField(max_length=50, null=True, blank=True)
+        upload_to="uploads/admission_letters/",
+        null=True, blank=True,
+        validators=[
+            FileExtensionValidator(allowed_extensions=['pdf', 'doc', 'docx']), validate_file_extension, validate_file_size]
+    )
+    payment_method = models.CharField(max_length=50,
+                                      null=True, blank=True,
+                                      choices=PaymentMethodEnum.choices(
+                                      ),
+                                      default=PaymentMethodEnum.CASH.name)
+    payment_status = models.CharField(max_length=20, choices=PaymentStatusEnum.choices(
+    ), default=PaymentStatusEnum.PENDING.name)
     payment_date = models.DateField(null=True, blank=True)
     amount_due = models.DecimalField(
         max_digits=10,

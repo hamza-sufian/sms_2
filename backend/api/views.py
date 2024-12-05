@@ -1,5 +1,4 @@
-from rest_framework import status, generics
-from rest_framework.response import Response
+from rest_framework import status, generics, permissions
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
@@ -17,6 +16,16 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.exceptions import PermissionDenied
+
+
+class IsOwnerOrAdmin(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Allow admin users to access any profile
+        if request.user.is_staff:
+            return True
+        # Allow users to access their own profile
+        return obj.email == request.user.email
 
 
 class StandardResultsSetPagination(PageNumberPagination):
@@ -26,7 +35,7 @@ class StandardResultsSetPagination(PageNumberPagination):
 
 
 class BaseProfileListCreateView(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     pagination_class = StandardResultsSetPagination
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     parser_classes = [MultiPartParser, FormParser]
@@ -34,9 +43,14 @@ class BaseProfileListCreateView(generics.ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         return super().post(request, *args, **kwargs)
 
+    def get_queryset(self):
+        if self.request.user.is_staff:
+            return self.queryset
+        return self.queryset.filter(email=self.request.user.email)
+
 
 class BaseProfileDetailView(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAuthenticated, IsOwnerOrAdmin]
     parser_classes = [MultiPartParser, FormParser]
 
     def put(self, request, *args, **kwargs):
@@ -100,9 +114,11 @@ class StudentProfileListCreateView(BaseProfileListCreateView):
             openapi.Parameter('admission_letter', openapi.IN_FORM,
                               description="Admission letter", type=openapi.TYPE_FILE, required=False),
             openapi.Parameter('payment_method', openapi.IN_FORM,
-                              description="Payment method", type=openapi.TYPE_STRING, required=False),
+                              description="Payment method", type=openapi.TYPE_STRING, enum=["CASH", "CREDIT_CARD", "PAYPAL", "BANK_TRANSFER", "APPLE_PAY", "GOOGLE_PAY", "CRYPTOCURRENCY", "CHECK", "GIFT_CARD", "DIRECT_DEBIT"
+                                                                                            ], required=False),
             openapi.Parameter('payment_status', openapi.IN_FORM,
-                              description="Payment status", type=openapi.TYPE_STRING, required=False),
+                              description="Payment status", type=openapi.TYPE_STRING, enum=["PAID", "PENDING", "OVERDUE", "PARTIAL"
+                                                                                            ], required=False),
             openapi.Parameter('payment_date', openapi.IN_FORM, description="Payment date",
                               type=openapi.TYPE_STRING, format=openapi.FORMAT_DATE, required=False),
             openapi.Parameter('amount_due', openapi.IN_FORM,
